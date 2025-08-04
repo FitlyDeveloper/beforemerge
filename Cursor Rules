@@ -1,0 +1,10 @@
+IMPORTANT RULES:
+
+- always strictly follow rules in this file, when making changes to the code.
+- Never update changes.md file, I dont care about that
+- THIS IS IMPORTANT: only make changes to the items I mention in my prompt. NOTHING ELSE.
+- Do not just jump to assumptions, reason first and then make the changes
+- Do not run "flutter run -d chrome" by yourself, unless it improves the code significantly, since sometimes this causes and error that forces me to have to help you out
+- Do not create unnecessary files or folders, use the exisiting ones as much as possible, follow my prompts directly.
+- Only change the files I tell you to, do not make assumptions, do not try to be creative, follow my instructions directly.
+- STOP GIVING FALSE HOPES, never say oh I FIXED IT NOW 100%, if you really didnt, I hate false promises.

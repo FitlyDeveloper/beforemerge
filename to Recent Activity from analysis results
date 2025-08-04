@@ -1,0 +1,109 @@
+warning: in the working copy of 'lib/NewScreens/SnapFood.dart', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/lib/NewScreens/SnapFood.dart b/lib/NewScreens/SnapFood.dart[m
+[1mindex f1aec0f..42bcb8d 100644[m
+[1m--- a/lib/NewScreens/SnapFood.dart[m
+[1m+++ b/lib/NewScreens/SnapFood.dart[m
+[36m@@ -705,6 +705,10 @@[m [mclass _SnapFoodState extends State<SnapFood> {[m
+         _analysisResult = analysisData;[m
+         _formattedAnalysisResult = null;[m
+       });[m
+[32m+[m
+[32m+[m[32m      // Save the food card to SharedPreferences for the Recent Activity section[m
+[32m+[m[32m      _saveFoodCardData(foodName, ingredients, calories, protein, fat, carbs,[m
+[32m+[m[32m          ingredientsList);[m
+     } catch (e) {[m
+       print("Error formatting analysis results: $e");[m
+ [m
+[36m@@ -715,6 +719,92 @@[m [mclass _SnapFoodState extends State<SnapFood> {[m
+     }[m
+   }[m
+ [m
+[32m+[m[32m  // Helper method to extract numeric value from a string[m
+[32m+[m[32m  int _extractNumericValue(String input) {[m
+[32m+[m[32m    // Try to extract digits from the string[m
+[32m+[m[32m    final match = RegExp(r'(\d+)').firstMatch(input);[m
+[32m+[m[32m    if (match != null && match.group(1) != null) {[m
+[32m+[m[32m      return int.tryParse(match.group(1)!) ?? 0;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    return 0;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  // Save food card data to SharedPreferences[m
+[32m+[m[32m  Future<void> _saveFoodCardData([m
+[32m+[m[32m      String foodName,[m
+[32m+[m[32m      String ingredients,[m
+[32m+[m[32m      String calories,[m
+[32m+[m[32m      String protein,[m
+[32m+[m[32m      String fat,[m
+[32m+[m[32m      String carbs,[m
+[32m+[m[32m      List<Map<String, dynamic>> ingredientsList) async {[m
+[32m+[m[32m    try {[m
+[32m+[m[32m      // Get the current image bytes[m
+[32m+[m[32m      Uint8List? imageBytes;[m
+[32m+[m[32m      if (_webImageBytes != null) {[m
+[32m+[m[32m        imageBytes = _webImageBytes;[m
+[32m+[m[32m      } else if (_webImagePath != null && kIsWeb) {[m
+[32m+[m[32m        try {[m
+[32m+[m[32m          imageBytes = await getWebImageBytes(_webImagePath!);[m
+[32m+[m[32m        } catch (e) {[m
+[32m+[m[32m          print("Error getting web image bytes: $e");[m
+[32m+[m[32m        }[m
+[32m+[m[32m      } else if (_imageFile != null && !kIsWeb) {[m
+[32m+[m[32m        try {[m
+[32m+[m[32m          imageBytes = await _imageFile!.readAsBytes();[m
+[32m+[m[32m        } catch (e) {[m
+[32m+[m[32m          print("Error reading image file bytes: $e");[m
+[32m+[m[32m        }[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      // Convert image to base64 for storage[m
+[32m+[m[32m      String? base64Image;[m
+[32m+[m[32m      if (imageBytes != null) {[m
+[32m+[m[32m        try {[m
+[32m+[m[32m          // Compress image for storage[m
+[32m+[m[32m          Uint8List compressedImage = await compressImage([m
+[32m+[m[32m            imageBytes,[m
+[32m+[m[32m            quality: 70,[m
+[32m+[m[32m            targetWidth: 300,[m
+[32m+[m[32m          );[m
+[32m+[m[32m          base64Image = base64Encode(compressedImage);[m
+[32m+[m[32m        } catch (e) {[m
+[32m+[m[32m          print("Error encoding image: $e");[m
+[32m+[m[32m        }[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      // Create food card data[m
+[32m+[m[32m      final Map<String, dynamic> foodCard = {[m
+[32m+[m[32m        'name': foodName.isNotEmpty ? foodName : 'Analyzed Meal',[m
+[32m+[m[32m        'calories': _extractNumericValue(calories),[m
+[32m+[m[32m        'protein': _extractNumericValue(protein),[m
+[32m+[m[32m        'fat': _extractNumericValue(fat),[m
+[32m+[m[32m        'carbs': _extractNumericValue(carbs),[m
+[32m+[m[32m        'timestamp': DateTime.now().millisecondsSinceEpoch,[m
+[32m+[m[32m        'image': base64Image,[m
+[32m+[m[32m        'ingredients': ingredientsList.map((ing) => ing['name']).toList(),[m
+[32m+[m[32m      };[m
+[32m+[m
+[32m+[m[32m      // Load existing food cards[m
+[32m+[m[32m      final prefs = await SharedPreferences.getInstance();[m
+[32m+[m[32m      final List<String> storedCards = prefs.getStringList('food_cards') ?? [];[m
+[32m+[m
+[32m+[m[32m      // Add new food card as JSON[m
+[32m+[m[32m      storedCards.insert(0, jsonEncode(foodCard));[m
+[32m+[m
+[32m+[m[32m      // Limit to last 10 cards to prevent excessive storage[m
+[32m+[m[32m      if (storedCards.length > 10) {[m
+[32m+[m[32m        storedCards.removeRange(10, storedCards.length);[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      // Save updated list[m
+[32m+[m[32m      await prefs.setStringList('food_cards', storedCards);[m
+[32m+[m[32m      print("Food card saved successfully");[m
+[32m+[m[32m    } catch (e) {[m
+[32m+[m[32m      print("Error saving food card: $e");[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }[m
+[32m+[m
+   // Test the echo function to verify callable functions work[m
+   Future<void> _testEchoFunction() async {[m
+     // Function logic removed[m

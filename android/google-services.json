@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "36267912737",
+    "project_id": "fitly-5651e",
+    "storage_bucket": "fitly-5651e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:36267912737:android:d7ed1c2bf470aad4b67d60",
+        "android_client_info": {
+          "package_name": "com.fitly.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "36267912737-vena9lnpei5ha2linoqh2s691vgpo66k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fitly.app",
+            "certificate_hash": "9542034d68100ca0a2a3147dd60aeb3fc7e2145b"
+          }
+        },
+        {
+          "client_id": "36267912737-483079gufmkef114fhprcfqo9m2fnucv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHIjFBvYGmw6mff5nVcv_OuFyJE8oOpyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "36267912737-483079gufmkef114fhprcfqo9m2fnucv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "36267912737-eca1u0dig4auu2a84ot7hp7ufnufbnth.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.fitly.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

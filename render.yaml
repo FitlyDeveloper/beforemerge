@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: snap-food
+    env: node
+    buildCommand: npm install
+    startCommand: node server/index.js
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: DEEPSEEK_API_KEY
+        sync: false
+    domains:
+      - snap-food.onrender.com
+      - deepseek-uhrc.onrender.com 

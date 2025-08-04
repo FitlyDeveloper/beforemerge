@@ -1,0 +1,17 @@
+﻿= : The term '=' is not recognized as the name of a cmdlet, function, script file, or operable program. 
+Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:1 char:2
++  = New-Object System.Net.WebClient; .DownloadString('https://raw.gith ...
++  ~
+    + CategoryInfo          : ObjectNotFound: (=:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+.DownloadString : The term '.DownloadString' is not recognized as the name of a cmdlet, function, script 
+file, or operable program. Check the spelling of the name, or if a path was included, verify that the path 
+is correct and try again.
+At line:1 char:37
++  = New-Object System.Net.WebClient; .DownloadString('https://raw.gith ...
++                                     ~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.DownloadString:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
