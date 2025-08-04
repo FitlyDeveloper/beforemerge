@@ -1041,7 +1041,7 @@ class _RunCardOpenState extends State<RunCardOpen>
 
                                                                                    // Run Stats - Three pill-shaped components as shown in the image
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                                             children: [
                                               _buildRunMetricPill('Time', _time, Color(0xFFD7C1FF), 'assets/images/Stopwatch.png'),
                                               _buildRunMetricPill('Distance', _distance, Color(0xFFFFD8B1), 'assets/images/distance.png'),
@@ -1367,18 +1367,18 @@ class _RunCardOpenState extends State<RunCardOpen>
             ),
             SizedBox(height: 4),
             Container(
-              width: 45, // Slightly reduced pill width
-              height: 10, // Fixed pill height
+              width: 35, // Reduced pill width to match food card compactness
+              height: 8, // Reduced height to match food card
               decoration: BoxDecoration(
                 color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(5),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: FractionallySizedBox(
                 widthFactor: 1.0,
                 child: Container(
                   decoration: BoxDecoration(
                     color: color,
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                 ),
               ),
