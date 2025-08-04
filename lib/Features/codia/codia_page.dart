@@ -1913,71 +1913,66 @@ class _CodiaPageState extends State<CodiaPage> {
                       ),
                       SizedBox(height: 7),
 
-                      // Running metrics row
+                      // Running metrics row - using fixed spacing like food card
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           // Duration with stopwatch icon
-                          Row(
-                            children: [
-                              Image.asset(
-                                'assets/images/Stopwatch.png',
-                                width: 14,
-                                height: 14,
-                              ),
-                              SizedBox(width: 7.7),
-                              Text(
-                                _formatDuration(durationInMinutes),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.normal,
-                                  color: Colors.black,
-                                  decoration: TextDecoration.none,
-                                ),
-                              ),
-                            ],
+                          Image.asset(
+                            'assets/images/Stopwatch.png',
+                            width: 14,
+                            height: 14,
                           ),
+                          SizedBox(width: 7.7),
+                          Flexible(
+                            child: Text(
+                              _formatDuration(durationInMinutes),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.normal,
+                                color: Colors.black,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 24.2),
                           
                           // Distance with distance icon
-                          Row(
-                            children: [
-                              Image.asset(
-                                'assets/images/Distance.png',
-                                width: 14,
-                                height: 14,
-                              ),
-                              SizedBox(width: 7.7),
-                              Text(
-                                '${_formatDistance(distance / 1000)}km',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.normal,
-                                  color: Colors.black,
-                                  decoration: TextDecoration.none,
-                                ),
-                              ),
-                            ],
+                          Image.asset(
+                            'assets/images/Distance.png',
+                            width: 14,
+                            height: 14,
                           ),
+                          SizedBox(width: 7.7),
+                          Flexible(
+                            child: Text(
+                              '${_formatDistance(distance / 1000)}km',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.normal,
+                                color: Colors.black,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 24.2),
                           
                           // Pace with speed icon
-                          Row(
-                            children: [
-                              Image.asset(
-                                'assets/images/speedicon.png',
-                                width: 14,
-                                height: 14,
+                          Image.asset(
+                            'assets/images/speedicon.png',
+                            width: 14,
+                            height: 14,
+                          ),
+                          SizedBox(width: 7.7),
+                          Flexible(
+                            child: Text(
+                              '${pace.toStringAsFixed(1)}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.normal,
+                                color: Colors.black,
+                                decoration: TextDecoration.none,
                               ),
-                              SizedBox(width: 7.7),
-                              Text(
-                                '${pace.toStringAsFixed(1)}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.normal,
-                                  color: Colors.black,
-                                  decoration: TextDecoration.none,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
