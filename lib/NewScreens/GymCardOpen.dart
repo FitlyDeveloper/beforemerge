@@ -1011,122 +1011,125 @@ class _GymCardOpenState extends State<GymCardOpen>
 
                                  SizedBox(height: 32),
 
-                                 // Social Section - exactly like FoodCardOpen
-                                 Padding(
-                                   padding: const EdgeInsets.symmetric(horizontal: 29),
-                                   child: Column(
-                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                     children: [
-                                       Text(
-                                         'Social',
-                                         style: TextStyle(
-                                           color: Colors.black,
-                                           fontSize: 20,
-                                           fontWeight: FontWeight.bold,
-                                           fontFamily: 'SF Pro Display',
+                                 // Only show social interaction area if not Private
+                                 if (_privacyStatus != 'Private') ...[
+                                   // Social Section - exactly like FoodCardOpen
+                                   Padding(
+                                     padding: const EdgeInsets.symmetric(horizontal: 29),
+                                     child: Column(
+                                       crossAxisAlignment: CrossAxisAlignment.start,
+                                       children: [
+                                         Text(
+                                           'Social',
+                                           style: TextStyle(
+                                             color: Colors.black,
+                                             fontSize: 20,
+                                             fontWeight: FontWeight.bold,
+                                             fontFamily: 'SF Pro Display',
+                                           ),
                                          ),
-                                       ),
-                                       SizedBox(height: 16),
-                                       // Social sharing buttons - matching Figma design exactly
-                                       Row(
-                                         children: [
-                                           // Like button area (left section)
-                                           Expanded(
-                                             child: Container(
-                                               height: 48,
-                                               decoration: BoxDecoration(
-                                                 color: Colors.white,
-                                                 borderRadius: BorderRadius.circular(24),
-                                                 boxShadow: [
-                                                   BoxShadow(
-                                                     color: Colors.black.withOpacity(0.05),
-                                                     blurRadius: 4,
-                                                     offset: Offset(0, 2),
-                                                   ),
-                                                 ],
-                                               ),
-                                               child: Center(
-                                                 child: Row(
-                                                   mainAxisAlignment: MainAxisAlignment.center,
-                                                   children: [
-                                                     GestureDetector(
-                                                       onTap: _toggleLike,
-                                                       child: AnimatedBuilder(
-                                                         animation: _likeController,
-                                                         builder: (context, child) {
-                                                           return Transform.scale(
-                                                             scale: _likeScaleAnimation.value,
-                                                             child: Image.asset(
-                                                               _isLiked
-                                                                   ? 'assets/images/likefilled.png'
-                                                                   : 'assets/images/like.png',
-                                                               width: 24,
-                                                               height: 24,
-                                                               color: Colors.black,
-                                                             ),
-                                                           );
-                                                         },
-                                                       ),
-                                                     ),
-                                                     SizedBox(width: 8),
-                                                     Text(
-                                                       '0 Likes',
-                                                       style: TextStyle(
-                                                         fontSize: 16,
-                                                         fontWeight: FontWeight.w500,
-                                                       ),
+                                         SizedBox(height: 16),
+                                         // Social sharing buttons - matching Figma design exactly
+                                         Row(
+                                           children: [
+                                             // Like button area (left section)
+                                             Expanded(
+                                               child: Container(
+                                                 height: 48,
+                                                 decoration: BoxDecoration(
+                                                   color: Colors.white,
+                                                   borderRadius: BorderRadius.circular(24),
+                                                   boxShadow: [
+                                                     BoxShadow(
+                                                       color: Colors.black.withOpacity(0.05),
+                                                       blurRadius: 4,
+                                                       offset: Offset(0, 2),
                                                      ),
                                                    ],
                                                  ),
-                                               ),
-                                             ),
-                                           ),
-                                           
-                                           SizedBox(width: 16),
-                                           
-                                           // Comment button (right section)
-                                           Expanded(
-                                             child: Container(
-                                               height: 48,
-                                               decoration: BoxDecoration(
-                                                 color: Colors.white,
-                                                 borderRadius: BorderRadius.circular(24),
-                                                 boxShadow: [
-                                                   BoxShadow(
-                                                     color: Colors.black.withOpacity(0.05),
-                                                     blurRadius: 4,
-                                                     offset: Offset(0, 2),
-                                                   ),
-                                                 ],
-                                               ),
-                                               child: Center(
-                                                 child: Row(
-                                                   mainAxisAlignment: MainAxisAlignment.center,
-                                                   children: [
-                                                     Image.asset(
-                                                       'assets/images/comment.png',
-                                                       width: 24,
-                                                       height: 24,
-                                                       color: Colors.black,
-                                                     ),
-                                                     SizedBox(width: 8),
-                                                     Text(
-                                                       '0 Comments',
-                                                       style: TextStyle(
-                                                         fontSize: 16,
-                                                         fontWeight: FontWeight.w500,
+                                                 child: Center(
+                                                   child: Row(
+                                                     mainAxisAlignment: MainAxisAlignment.center,
+                                                     children: [
+                                                       GestureDetector(
+                                                         onTap: _toggleLike,
+                                                         child: AnimatedBuilder(
+                                                           animation: _likeController,
+                                                           builder: (context, child) {
+                                                             return Transform.scale(
+                                                               scale: _likeScaleAnimation.value,
+                                                               child: Image.asset(
+                                                                 _isLiked
+                                                                     ? 'assets/images/likefilled.png'
+                                                                     : 'assets/images/like.png',
+                                                                 width: 24,
+                                                                 height: 24,
+                                                                 color: Colors.black,
+                                                               ),
+                                                             );
+                                                           },
+                                                         ),
                                                        ),
-                                                     ),
-                                                   ],
+                                                       SizedBox(width: 8),
+                                                       Text(
+                                                         '0 Likes',
+                                                         style: TextStyle(
+                                                           fontSize: 16,
+                                                           fontWeight: FontWeight.w500,
+                                                         ),
+                                                       ),
+                                                     ],
+                                                   ),
                                                  ),
                                                ),
                                              ),
-                                           ),
-                                         ],
-                                       ),
-                                     ],
+                                             
+                                             SizedBox(width: 16),
+                                             
+                                             // Comment button (right section)
+                                             Expanded(
+                                               child: Container(
+                                                 height: 48,
+                                                 decoration: BoxDecoration(
+                                                   color: Colors.white,
+                                                   borderRadius: BorderRadius.circular(24),
+                                                   boxShadow: [
+                                                     BoxShadow(
+                                                       color: Colors.black.withOpacity(0.05),
+                                                       blurRadius: 4,
+                                                       offset: Offset(0, 2),
+                                                     ),
+                                                   ],
+                                                 ),
+                                                 child: Center(
+                                                   child: Row(
+                                                     mainAxisAlignment: MainAxisAlignment.center,
+                                                     children: [
+                                                       Image.asset(
+                                                         'assets/images/comment.png',
+                                                         width: 24,
+                                                         height: 24,
+                                                         color: Colors.black,
+                                                       ),
+                                                       SizedBox(width: 8),
+                                                       Text(
+                                                         '0 Comments',
+                                                         style: TextStyle(
+                                                           fontSize: 16,
+                                                           fontWeight: FontWeight.w500,
+                                                         ),
+                                                       ),
+                                                     ],
+                                                   ),
+                                                 ),
+                                               ),
+                                             ),
+                                           ],
+                                         ),
+                                       ],
+                                     ),
                                    ),
-                                 ),
+                                 ],
 
                                  SizedBox(height: 32),
 

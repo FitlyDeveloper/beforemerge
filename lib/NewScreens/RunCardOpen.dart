@@ -34,6 +34,7 @@ class RunCardOpen extends StatefulWidget {
 class _RunCardOpenState extends State<RunCardOpen>
     with TickerProviderStateMixin {
   bool _isLoading = false;
+  bool _isLiked = false;
   bool _isBookmarked = false;
   bool _hasUnsavedChanges = false;
   
@@ -44,6 +45,8 @@ class _RunCardOpenState extends State<RunCardOpen>
 
   late AnimationController _bookmarkController;
   late Animation<double> _bookmarkScaleAnimation;
+  late AnimationController _likeController;
+  late Animation<double> _likeScaleAnimation;
 
   // Initialize with default values
   String _runName = 'Evening run 1';
@@ -120,11 +123,28 @@ class _RunCardOpenState extends State<RunCardOpen>
       parent: _bookmarkController,
       curve: Curves.easeInOut,
     ));
+
+    // Like animations
+    _likeController = AnimationController(
+      duration: Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _likeScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.15,
+    ).animate(
+      CurvedAnimation(
+        parent: _likeController,
+        curve: Curves.easeOutBack,
+      ),
+    );
   }
 
   @override
   void dispose() {
     _bookmarkController.dispose();
+    _likeController.dispose();
     super.dispose();
   }
 
@@ -171,6 +191,7 @@ class _RunCardOpenState extends State<RunCardOpen>
           _notes = data['notes'] ?? _notes;
           _calories = data['calories'] ?? _calories;
           _intensity = data['intensity'] ?? _intensity;
+          _isLiked = data['isLiked'] ?? false;
           _isBookmarked = data['isBookmarked'] ?? false;
           _privacyStatus = data['privacyStatus'] ?? 'Private';
         });
@@ -188,6 +209,7 @@ class _RunCardOpenState extends State<RunCardOpen>
         'notes': _notes,
         'calories': _calories,
         'intensity': _intensity,
+        'isLiked': _isLiked,
         'isBookmarked': _isBookmarked,
         'privacyStatus': _privacyStatus,
       };
@@ -229,6 +251,16 @@ class _RunCardOpenState extends State<RunCardOpen>
       _isBookmarked = !_isBookmarked;
       _bookmarkController.reset();
       _bookmarkController.forward();
+      _markAsUnsaved(); // Mark as having unsaved changes
+    });
+  }
+
+  // Method to toggle like state with animation
+  void _toggleLike() {
+    setState(() {
+      _isLiked = !_isLiked;
+      _likeController.reset();
+      _likeController.forward();
       _markAsUnsaved(); // Mark as having unsaved changes
     });
   }
@@ -1022,6 +1054,128 @@ class _RunCardOpenState extends State<RunCardOpen>
                                  ),
 
                                  SizedBox(height: 32),
+
+                                 // Only show social interaction area if not Private
+                                 if (_privacyStatus != 'Private') ...[
+                                   // Social Section - exactly like FoodCardOpen
+                                   Padding(
+                                     padding: const EdgeInsets.symmetric(horizontal: 29),
+                                     child: Column(
+                                       crossAxisAlignment: CrossAxisAlignment.start,
+                                       children: [
+                                         Text(
+                                           'Social',
+                                           style: TextStyle(
+                                             color: Colors.black,
+                                             fontSize: 20,
+                                             fontWeight: FontWeight.bold,
+                                             fontFamily: 'SF Pro Display',
+                                           ),
+                                         ),
+                                         SizedBox(height: 16),
+                                         // Social sharing buttons - matching Figma design exactly
+                                         Row(
+                                           children: [
+                                             // Like button area (left section)
+                                             Expanded(
+                                               child: Container(
+                                                 height: 48,
+                                                 decoration: BoxDecoration(
+                                                   color: Colors.white,
+                                                   borderRadius: BorderRadius.circular(24),
+                                                   boxShadow: [
+                                                     BoxShadow(
+                                                       color: Colors.black.withOpacity(0.05),
+                                                       blurRadius: 4,
+                                                       offset: Offset(0, 2),
+                                                     ),
+                                                   ],
+                                                 ),
+                                                 child: Center(
+                                                   child: Row(
+                                                     mainAxisAlignment: MainAxisAlignment.center,
+                                                     children: [
+                                                       GestureDetector(
+                                                         onTap: _toggleLike,
+                                                         child: AnimatedBuilder(
+                                                           animation: _likeController,
+                                                           builder: (context, child) {
+                                                             return Transform.scale(
+                                                               scale: _likeScaleAnimation.value,
+                                                               child: Image.asset(
+                                                                 _isLiked
+                                                                     ? 'assets/images/likefilled.png'
+                                                                     : 'assets/images/like.png',
+                                                                 width: 24,
+                                                                 height: 24,
+                                                                 color: Colors.black,
+                                                               ),
+                                                             );
+                                                           },
+                                                         ),
+                                                       ),
+                                                       SizedBox(width: 8),
+                                                       Text(
+                                                         '0 Likes',
+                                                         style: TextStyle(
+                                                           fontSize: 16,
+                                                           fontWeight: FontWeight.w500,
+                                                         ),
+                                                       ),
+                                                     ],
+                                                   ),
+                                                 ),
+                                               ),
+                                             ),
+                                             
+                                             SizedBox(width: 16),
+                                             
+                                             // Comment button (right section)
+                                             Expanded(
+                                               child: Container(
+                                                 height: 48,
+                                                 decoration: BoxDecoration(
+                                                   color: Colors.white,
+                                                   borderRadius: BorderRadius.circular(24),
+                                                   boxShadow: [
+                                                     BoxShadow(
+                                                       color: Colors.black.withOpacity(0.05),
+                                                       blurRadius: 4,
+                                                       offset: Offset(0, 2),
+                                                     ),
+                                                   ],
+                                                 ),
+                                                 child: Center(
+                                                   child: Row(
+                                                     mainAxisAlignment: MainAxisAlignment.center,
+                                                     children: [
+                                                       Image.asset(
+                                                         'assets/images/comment.png',
+                                                         width: 24,
+                                                         height: 24,
+                                                         color: Colors.black,
+                                                       ),
+                                                       SizedBox(width: 8),
+                                                       Text(
+                                                         '0 Comments',
+                                                         style: TextStyle(
+                                                           fontSize: 16,
+                                                           fontWeight: FontWeight.w500,
+                                                         ),
+                                                       ),
+                                                     ],
+                                                   ),
+                                                 ),
+                                               ),
+                                             ),
+                                           ],
+                                         ),
+                                       ],
+                                     ),
+                                   ),
+                                   
+                                   SizedBox(height: 32),
+                                 ],
 
                                  // Intensity Section
                                  Padding(
