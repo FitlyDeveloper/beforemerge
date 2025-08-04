@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import '../Features/codia/codia_page.dart';
+import 'LogRunning.dart';
 import 'dart:math';
 
 // Custom scroll physics optimized for mouse wheel
@@ -177,6 +178,41 @@ class _RunCardOpenState extends State<RunCardOpen>
       }
     }
     return null;
+  }
+
+  int _extractTimeInMinutes(String timeString) {
+    if (timeString.isEmpty) return 0;
+    
+    // Handle formats like "1h 30min", "60min", "1h"
+    if (timeString.contains('h')) {
+      int hours = 0;
+      int minutes = 0;
+      
+      // Extract hours
+      RegExp hourRegex = RegExp(r'(\d+)h');
+      Match? hourMatch = hourRegex.firstMatch(timeString);
+      if (hourMatch != null) {
+        hours = int.tryParse(hourMatch.group(1) ?? '0') ?? 0;
+      }
+      
+      // Extract minutes
+      RegExp minuteRegex = RegExp(r'(\d+)min');
+      Match? minuteMatch = minuteRegex.firstMatch(timeString);
+      if (minuteMatch != null) {
+        minutes = int.tryParse(minuteMatch.group(1) ?? '0') ?? 0;
+      }
+      
+      return (hours * 60) + minutes;
+    } else {
+      // Handle "60min" format
+      RegExp minuteRegex = RegExp(r'(\d+)min');
+      Match? minuteMatch = minuteRegex.firstMatch(timeString);
+      if (minuteMatch != null) {
+        return int.tryParse(minuteMatch.group(1) ?? '0') ?? 0;
+      }
+    }
+    
+    return 0;
   }
 
   Future<void> _loadSavedData() async {
@@ -654,55 +690,20 @@ class _RunCardOpenState extends State<RunCardOpen>
   }
 
   void _editRun() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Edit Run'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Run Name',
-                  border: OutlineInputBorder(),
-                ),
-                controller: TextEditingController(text: _runName),
-                onChanged: (value) {
-                  _runName = value;
-                },
-              ),
-              SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Notes',
-                  border: OutlineInputBorder(),
-                ),
-                controller: TextEditingController(text: _notes),
-                onChanged: (value) {
-                  _notes = value;
-                },
-                maxLines: 3,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() {
-                  _markAsUnsaved();
-                });
-              },
-              child: Text('Save'),
-            ),
-          ],
-        );
-      },
+    // Extract distance and time from current values
+    double distanceInKm = _extractNumericValueAsDouble(_distance) ?? 0.0;
+    int timeInMinutes = _extractTimeInMinutes(_time);
+    
+    // Navigate to LogRunning with current values
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LogRunning(
+          initialDistance: distanceInKm,
+          initialTime: timeInMinutes,
+          initialTitle: _runName,
+        ),
+      ),
     );
   }
 

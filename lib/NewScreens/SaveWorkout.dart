@@ -14,7 +14,18 @@ class SaveWorkout extends StatefulWidget {
   final double? distance; // Distance for running/custom workouts
   final String? exerciseName; // Exercise name for custom workouts
   final double? intensityLevel; // Intensity level (1-6) for custom workouts
-  const SaveWorkout({Key? key, required this.duration, required this.volume, required this.prs, this.workoutType, this.distance, this.exerciseName, this.intensityLevel}) : super(key: key);
+  final String? initialTitle; // Initial title for editing existing workouts
+  const SaveWorkout({
+    Key? key, 
+    required this.duration, 
+    required this.volume, 
+    required this.prs, 
+    this.workoutType, 
+    this.distance, 
+    this.exerciseName, 
+    this.intensityLevel,
+    this.initialTitle,
+  }) : super(key: key);
 
   @override
   State<SaveWorkout> createState() => _SaveWorkoutState();
@@ -28,7 +39,13 @@ class _SaveWorkoutState extends State<SaveWorkout> {
   @override
   void initState() {
     super.initState();
-    _generateTitle();
+    
+    // Use initial title if provided (for editing), otherwise generate a new title
+    if (widget.initialTitle != null && widget.initialTitle!.isNotEmpty) {
+      _titleController.text = widget.initialTitle!;
+    } else {
+      _generateTitle();
+    }
   }
 
   @override
@@ -39,7 +56,7 @@ class _SaveWorkoutState extends State<SaveWorkout> {
   }
 
   void _generateTitle() {
-    if (_titleController.text.isNotEmpty) return; // Don't override if user already entered a title
+    if (_titleController.text.isNotEmpty || widget.initialTitle != null) return; // Don't override if user already entered a title or if initial title is provided
     
     final now = DateTime.now();
     final hour = now.hour;

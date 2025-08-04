@@ -2,7 +2,16 @@ import 'package:flutter/material.dart';
 import 'SaveWorkout.dart';
 
 class LogRunning extends StatefulWidget {
-  const LogRunning({Key? key}) : super(key: key);
+  final double? initialDistance; // in km
+  final int? initialTime; // in minutes
+  final String? initialTitle; // for editing existing runs
+  
+  const LogRunning({
+    Key? key, 
+    this.initialDistance, 
+    this.initialTime,
+    this.initialTitle,
+  }) : super(key: key);
 
   @override
   State<LogRunning> createState() => _LogRunningState();
@@ -17,6 +26,19 @@ class _LogRunningState extends State<LogRunning> {
 
   final List<String> distances = ['1 km', '5 km', '10 km', '15 km'];
   final List<String> times = ['15 min', '30 min', '60 min', '90 min'];
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Pre-fill controllers with initial values if provided
+    if (widget.initialDistance != null) {
+      _distanceController.text = widget.initialDistance!.toString();
+    }
+    if (widget.initialTime != null) {
+      _timeController.text = widget.initialTime!.toString();
+    }
+  }
 
   @override
   void dispose() {
@@ -373,6 +395,7 @@ class _LogRunningState extends State<LogRunning> {
                           prs: 0, 
                           workoutType: 'running',
                           distance: distanceInMeters, // Store in meters
+                          initialTitle: widget.initialTitle, // Pass the initial title for editing
                         )),
                       );
                     },
