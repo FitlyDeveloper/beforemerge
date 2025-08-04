@@ -26,7 +26,8 @@ class GoodJob extends StatelessWidget {
   final String? exerciseName;
   final double? intensityLevel;
   final List<Map<String, dynamic>>? exercises; // Add exercises data
-  const GoodJob({Key? key, required this.totalKg, required this.username, this.workoutTitle, this.workoutType, this.duration, this.distance, this.exerciseName, this.intensityLevel, this.exercises}) : super(key: key);
+  final String? runId; // ID of the run being edited (null for new runs)
+  const GoodJob({Key? key, required this.totalKg, required this.username, this.workoutTitle, this.workoutType, this.duration, this.distance, this.exerciseName, this.intensityLevel, this.exercises, this.runId}) : super(key: key);
 
   Map<String, String> getWeightComparison(int kg) {
     for (final comp in weightComparisons) {
@@ -254,6 +255,29 @@ class GoodJob extends StatelessWidget {
                     'exercises': exercises, // Add exercises data
                   };
                   
+                  // If editing an existing run, update it instead of creating new
+                  if (runId != null) {
+                    // Find and update the existing run
+                    for (int i = 0; i < cards.length; i++) {
+                      try {
+                        final cardData = jsonDecode(cards[i]);
+                        if (cardData['id'] == runId) {
+                          // Update the existing run with new data
+                          workoutLog['id'] = runId; // Preserve the original ID
+                          workoutLog['timestamp'] = cardData['timestamp']; // Preserve original timestamp
+                          cards[i] = jsonEncode(workoutLog);
+                          break;
+                        }
+                      } catch (e) {
+                        // Skip invalid JSON entries
+                        continue;
+                      }
+                    }
+                  } else {
+                    // Create new run - add to beginning of list
+                    cards.insert(0, jsonEncode(workoutLog));
+                  }
+                  
                   // Add running-specific fields if this is a running workout
                   final double? rawDistance = distance;
                   if (workoutType == 'running' && rawDistance != null && rawDistance > 0) {
@@ -288,7 +312,6 @@ class GoodJob extends StatelessWidget {
                        workoutLog['intensityLevel'] = intensityLevel!; // Store intensity level (1-6)
                      }
                   }
-                  cards.insert(0, jsonEncode(workoutLog));
                   await prefs.setStringList('food_cards', cards);
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (context) => CodiaPage()),

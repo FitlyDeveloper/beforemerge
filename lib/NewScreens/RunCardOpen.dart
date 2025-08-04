@@ -694,7 +694,7 @@ class _RunCardOpenState extends State<RunCardOpen>
     double distanceInKm = _extractNumericValueAsDouble(_distance) ?? 0.0;
     int timeInMinutes = _extractTimeInMinutes(_time);
     
-    // Navigate to LogRunning with current values
+    // Navigate to LogRunning with current values and run ID for editing
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -702,6 +702,7 @@ class _RunCardOpenState extends State<RunCardOpen>
           initialDistance: distanceInKm,
           initialTime: timeInMinutes,
           initialTitle: _runName,
+          runId: widget.workoutData['id'], // Pass the run ID for editing
         ),
       ),
     );

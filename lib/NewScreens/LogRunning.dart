@@ -5,12 +5,14 @@ class LogRunning extends StatefulWidget {
   final double? initialDistance; // in km
   final int? initialTime; // in minutes
   final String? initialTitle; // for editing existing runs
+  final String? runId; // ID of the run being edited (null for new runs)
   
   const LogRunning({
     Key? key, 
     this.initialDistance, 
     this.initialTime,
     this.initialTitle,
+    this.runId,
   }) : super(key: key);
 
   @override
@@ -408,6 +410,7 @@ class _LogRunningState extends State<LogRunning> {
                           workoutType: 'running',
                           distance: distanceInMeters, // Store in meters
                           initialTitle: widget.initialTitle, // Pass the initial title for editing
+                          runId: widget.runId, // Pass the run ID for editing existing runs
                         )),
                       );
                     },

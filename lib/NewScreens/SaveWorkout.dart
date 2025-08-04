@@ -15,6 +15,7 @@ class SaveWorkout extends StatefulWidget {
   final String? exerciseName; // Exercise name for custom workouts
   final double? intensityLevel; // Intensity level (1-6) for custom workouts
   final String? initialTitle; // Initial title for editing existing workouts
+  final String? runId; // ID of the run being edited (null for new runs)
   const SaveWorkout({
     Key? key, 
     required this.duration, 
@@ -25,6 +26,7 @@ class SaveWorkout extends StatefulWidget {
     this.exerciseName, 
     this.intensityLevel,
     this.initialTitle,
+    this.runId,
   }) : super(key: key);
 
   @override
@@ -838,6 +840,7 @@ class _SaveWorkoutState extends State<SaveWorkout> {
                                                           distance: widget.distance,
                                                           exerciseName: widget.exerciseName,
                                                           intensityLevel: widget.intensityLevel,
+                                                          runId: widget.runId, // Pass the run ID for editing existing runs
                                                         ),
                                                         transitionsBuilder: (context, animation, secondaryAnimation, child) {
                                                           const begin = Offset(1.0, 0.0);
