@@ -174,7 +174,9 @@ class _LogRunningState extends State<LogRunning> {
                                     setState(() {
                                       selectedDistance = selected ? distance : null;
                                       if (selected) {
-                                        _distanceController.text = distance.replaceAll(' km', '');
+                                        // Extract just the numeric value from the preset (e.g., "10 km" -> "10")
+                                        String numericValue = distance.replaceAll(' km', '');
+                                        _distanceController.text = numericValue;
                                       }
                                     });
                                   },
@@ -218,6 +220,14 @@ class _LogRunningState extends State<LogRunning> {
                                 cursorWidth: 1.2,
                                 textAlign: TextAlign.left,
                                 textAlignVertical: TextAlignVertical.center,
+                                onChanged: (value) {
+                                  // Clear selected preset when user types manually
+                                  if (selectedDistance != null) {
+                                    setState(() {
+                                      selectedDistance = null;
+                                    });
+                                  }
+                                },
                                 style: TextStyle(
                                   fontSize: 13.6,
                                   fontWeight: FontWeight.w400,
@@ -286,7 +296,9 @@ class _LogRunningState extends State<LogRunning> {
                                     setState(() {
                                       selectedTime = selected ? time : null;
                                       if (selected) {
-                                        _timeController.text = time.replaceAll(' min', '');
+                                        // Extract just the numeric value from the preset (e.g., "60 min" -> "60")
+                                        String numericValue = time.replaceAll(' min', '');
+                                        _timeController.text = numericValue;
                                       }
                                     });
                                   },
@@ -330,6 +342,14 @@ class _LogRunningState extends State<LogRunning> {
                                 cursorWidth: 1.2,
                                 textAlign: TextAlign.left,
                                 textAlignVertical: TextAlignVertical.center,
+                                onChanged: (value) {
+                                  // Clear selected preset when user types manually
+                                  if (selectedTime != null) {
+                                    setState(() {
+                                      selectedTime = null;
+                                    });
+                                  }
+                                },
                                 style: TextStyle(
                                   fontSize: 13.6,
                                   fontWeight: FontWeight.w400,
@@ -395,11 +415,19 @@ class _LogRunningState extends State<LogRunning> {
                   child: TextButton(
                     onPressed: () {
                       // Get the distance and time values from user input
-                      double distanceInKm = double.tryParse(_distanceController.text) ?? 0.0;
-                      int timeInMinutes = int.tryParse(_timeController.text) ?? 0;
+                      // Clean the distance text to ensure proper parsing
+                      String cleanDistanceText = _distanceController.text.trim();
+                      double distanceInKm = double.tryParse(cleanDistanceText) ?? 0.0;
+                      int timeInMinutes = int.tryParse(_timeController.text.trim()) ?? 0;
                       
                       // Convert distance from kilometers to meters for storage
                       double distanceInMeters = distanceInKm * 1000;
+                      
+                      // Debug logging to verify the values
+                      print('LogRunning - Distance input: "${_distanceController.text}"');
+                      print('LogRunning - Cleaned distance: "$cleanDistanceText"');
+                      print('LogRunning - Distance in km: $distanceInKm');
+                      print('LogRunning - Distance in meters: $distanceInMeters');
                       
                       Navigator.push(
                         context,
