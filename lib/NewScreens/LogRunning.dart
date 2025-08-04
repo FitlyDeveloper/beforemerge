@@ -34,9 +34,21 @@ class _LogRunningState extends State<LogRunning> {
     // Pre-fill controllers with initial values if provided
     if (widget.initialDistance != null) {
       _distanceController.text = widget.initialDistance!.toString();
+      
+      // Check if the initial distance matches any preset button
+      String distanceWithUnit = '${widget.initialDistance!.toStringAsFixed(widget.initialDistance! % 1 == 0 ? 0 : 1)} km';
+      if (distances.contains(distanceWithUnit)) {
+        selectedDistance = distanceWithUnit;
+      }
     }
     if (widget.initialTime != null) {
       _timeController.text = widget.initialTime!.toString();
+      
+      // Check if the initial time matches any preset button
+      String timeWithUnit = '${widget.initialTime} min';
+      if (times.contains(timeWithUnit)) {
+        selectedTime = timeWithUnit;
+      }
     }
   }
 
