@@ -1944,16 +1944,13 @@ class _CodiaPageState extends State<CodiaPage> {
                             height: 14,
                           ),
                           SizedBox(width: 7.7),
-                          Flexible(
-                            child: Text(
-                              '${_formatDistance(distance / 1000)}km',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.normal,
-                                color: Colors.black,
-                                decoration: TextDecoration.none,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            '${_formatDistance(distance / 1000)}km',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.normal,
+                              color: Colors.black,
+                              decoration: TextDecoration.none,
                             ),
                           ),
                           SizedBox(width: 24.2),
