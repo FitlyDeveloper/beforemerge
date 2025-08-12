@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../Features/codia/codia_page.dart';
+import '../models/intensity_level.dart';
 
 final List<Map<String, dynamic>> weightComparisons = [
   {"min": 0, "max": 200, "label": "a bear", "image": "assets/images/bear.png"},
@@ -16,19 +17,39 @@ final List<Map<String, dynamic>> weightComparisons = [
   {"min": 20000, "max": 999999, "label": "a tank", "image": "assets/images/tank.png"},
 ];
 
-class GoodJob extends StatelessWidget {
-  final int totalKg;
-  final String username;
-  final String? workoutTitle;
-  final String? workoutType;
+class GoodJob extends StatefulWidget {
   final int? duration;
+  final int? volume;
+  final int? prs;
+  final String? workoutType;
   final double? distance;
   final String? exerciseName;
-  final double? intensityLevel;
-  final List<Map<String, dynamic>>? exercises; // Add exercises data
-  final String? runId; // ID of the run being edited (null for new runs)
-  const GoodJob({Key? key, required this.totalKg, required this.username, this.workoutTitle, this.workoutType, this.duration, this.distance, this.exerciseName, this.intensityLevel, this.exercises, this.runId}) : super(key: key);
+  final IntensityLevel? intensityLevel;
+  final String? workoutTitle;
+  final List<Map<String, dynamic>>? exercises;
+  final String? runId;
+  final double? totalKg;
+  
+  const GoodJob({
+    Key? key,
+    this.duration,
+    this.volume,
+    this.prs,
+    this.workoutType,
+    this.distance,
+    this.exerciseName,
+    this.intensityLevel,
+    this.workoutTitle,
+    this.exercises,
+    this.runId,
+    this.totalKg,
+  }) : super(key: key);
 
+  @override
+  State<GoodJob> createState() => _GoodJobState();
+}
+
+class _GoodJobState extends State<GoodJob> {
   Map<String, String> getWeightComparison(int kg) {
     for (final comp in weightComparisons) {
       if (kg >= comp["min"] && kg < comp["max"]) {
@@ -40,7 +61,7 @@ class GoodJob extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final comparison = getWeightComparison(totalKg);
+    final comparison = getWeightComparison(widget.volume ?? 0);
     final double screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
@@ -176,7 +197,7 @@ class GoodJob extends StatelessWidget {
                         Column(
                           children: [
                             Text(
-                              'You lifted a total of $totalKg kg',
+                              'You lifted a total of ${widget.volume ?? 0} kg',
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -239,62 +260,43 @@ class GoodJob extends StatelessWidget {
               ),
               child: TextButton(
                 onPressed: () async {
-                  // Save workout log to food_cards (same as Snap Meal)
+                  // Save workout log to workout_cards (separate from food)
                   final prefs = await SharedPreferences.getInstance();
-                  List<String> cards = prefs.getStringList('food_cards') ?? [];
+                  List<String> workoutCards = prefs.getStringList('workout_cards') ?? [];
                   final now = DateTime.now();
+                  final double? rawDistance = widget.distance;
+                  
+
+                  
                   final workoutLog = {
                     'type': 'workout',
-                    'workoutType': workoutType ?? 'weightlifting', // Default to weightlifting if not specified
-                    'name': workoutTitle ?? 'Evening Workout 1', // Use passed title or fallback
+                    'workoutType': widget.workoutType ?? 'weightlifting', // Default to weightlifting if not specified
+                    'name': widget.workoutTitle ?? 'Evening Workout 1', // Use passed title or fallback
                     'calories': 200, // Replace with actual calories
-                    'duration': duration ?? 51, // Use actual duration or fallback
-                    'volume': totalKg, // Use totalKg from widget
-                    'prs': 0, // Set to 0 since we don't track PR data yet
+                    'duration': widget.duration ?? 51, // Use actual duration or fallback
+                    'volume': widget.volume ?? 0, // Use volume from widget
+                    'prs': widget.prs ?? 0, // Use prs from widget
                     'timestamp': now.millisecondsSinceEpoch,
-                    'exercises': exercises, // Add exercises data
+                    'id': 'workout_${now.millisecondsSinceEpoch}', // Generate unique ID
+                    'exercises': widget.exercises, // Add exercises data
                   };
                   
-                  // If editing an existing run, update it instead of creating new
-                  if (runId != null) {
-                    // Find and update the existing run
-                    for (int i = 0; i < cards.length; i++) {
-                      try {
-                        final cardData = jsonDecode(cards[i]);
-                        if (cardData['id'] == runId) {
-                          // Update the existing run with new data
-                          workoutLog['id'] = runId; // Preserve the original ID
-                          workoutLog['timestamp'] = cardData['timestamp']; // Preserve original timestamp
-                          cards[i] = jsonEncode(workoutLog);
-                          break;
-                        }
-                      } catch (e) {
-                        // Skip invalid JSON entries
-                        continue;
-                      }
-                    }
-                  } else {
-                    // Create new run - add to beginning of list
-                    cards.insert(0, jsonEncode(workoutLog));
-                  }
-                  
                   // Add running-specific fields if this is a running workout
-                  final double? rawDistance = distance;
-                  if (workoutType == 'running' && rawDistance != null && rawDistance > 0) {
+                  if (widget.workoutType == 'running' && rawDistance != null && rawDistance > 0) {
                     workoutLog['distance'] = rawDistance; // Store distance in meters
                     
-                    // Calculate pace: totalDurationInMinutes / totalDistanceInKm
-                    int durationInMinutes = (duration ?? 0) ~/ 60; // Convert seconds to minutes
-                    double distanceInKm = rawDistance / 1000; // Convert meters to kilometers for pace calculation
-                    double calculatedPace = distanceInKm > 0 ? durationInMinutes / distanceInKm : 0.0; // Avoid division by zero
-                    workoutLog['pace'] = double.parse(calculatedPace.toStringAsFixed(1)); // Round to 1 decimal place
+                    // Calculate pace: minutes per kilometer
+                    int durationInMinutes = (widget.duration ?? 0) ~/ 60; // Convert seconds to minutes
+                    double distanceInKm = rawDistance / 1000; // Convert meters to kilometers
+                    double paceMinutesPerKm = distanceInKm > 0 ? durationInMinutes / distanceInKm : 0.0; // Avoid division by zero
+                    workoutLog['pace'] = double.parse(paceMinutesPerKm.toStringAsFixed(1)); // Round to 1 decimal place
                   }
                   
                   // Add custom exercise-specific fields if this is a custom workout
-                  if (workoutType == 'custom') {
+                  if (widget.workoutType == 'custom') {
                     // Use custom exercise name if provided
-                    if (exerciseName != null && exerciseName!.isNotEmpty) {
-                      workoutLog['name'] = exerciseName!;
+                    if (widget.exerciseName != null && widget.exerciseName!.isNotEmpty) {
+                      workoutLog['name'] = widget.exerciseName!;
                     }
                     
                     // Handle distance vs intensity toggle
@@ -302,17 +304,72 @@ class GoodJob extends StatelessWidget {
                       // User entered distance
                       workoutLog['distance'] = rawDistance; // Store distance in meters
                       
-                      // Calculate pace: totalDurationInMinutes / totalDistanceInKm
-                      int durationInMinutes = (duration ?? 0) ~/ 60; // Convert seconds to minutes
-                      double distanceInKm = rawDistance / 1000; // Convert meters to kilometers for pace calculation
-                      double calculatedPace = distanceInKm > 0 ? durationInMinutes / distanceInKm : 0.0; // Avoid division by zero
-                      workoutLog['pace'] = double.parse(calculatedPace.toStringAsFixed(1)); // Round to 1 decimal place
-                                         } else if (intensityLevel != null) {
-                       // User used intensity slider
-                       workoutLog['intensityLevel'] = intensityLevel!; // Store intensity level (1-6)
-                     }
+                      // Calculate pace: minutes per kilometer
+                      int durationInMinutes = (widget.duration ?? 0) ~/ 60; // Convert seconds to minutes
+                      double distanceInKm = rawDistance / 1000; // Convert meters to kilometers
+                      double paceMinutesPerKm = distanceInKm > 0 ? durationInMinutes / distanceInKm : 0.0; // Avoid division by zero
+                      workoutLog['pace'] = double.parse(paceMinutesPerKm.toStringAsFixed(1)); // Round to 1 decimal place
+                    } else if (widget.intensityLevel != null) {
+                      // User used intensity slider
+                      workoutLog['intensityLevel'] = widget.intensityLevel!.index; // Store intensity level index
+                    }
                   }
-                  await prefs.setStringList('food_cards', cards);
+                  
+                  // If editing an existing run, update it instead of creating new
+                  if (widget.runId != null) {
+                    // Find and update the existing run
+                    bool foundAndUpdated = false;
+                    for (int i = 0; i < workoutCards.length; i++) {
+                      try {
+                        final cardData = jsonDecode(workoutCards[i]);
+                        
+                        // Check if this is the run we want to update
+                        bool isTargetRun = false;
+                        
+                        // First, try to match by ID
+                        if (cardData['id'] == widget.runId) {
+                          isTargetRun = true;
+                        }
+                        // If no ID match, try to match by timestamp (for older workouts without IDs)
+                        else if (cardData['timestamp'] != null && widget.runId!.startsWith('workout_')) {
+                          String timestampFromId = widget.runId!.replaceFirst('workout_', '');
+                          if (cardData['timestamp'].toString() == timestampFromId) {
+                            isTargetRun = true;
+                          }
+                        }
+                        
+                        if (isTargetRun) {
+                          // Update the existing run with new data
+                          workoutLog['id'] = widget.runId; // Preserve the original ID
+                          workoutLog['timestamp'] = cardData['timestamp']; // Preserve original timestamp
+                          workoutCards[i] = jsonEncode(workoutLog);
+                          foundAndUpdated = true;
+                          print('Updated existing run with ID: ${widget.runId}');
+                          break;
+                        }
+                      } catch (e) {
+                        // Skip invalid JSON entries
+                        continue;
+                      }
+                    }
+                    
+                    // If we didn't find the run to update, create a new one with the provided ID
+                    if (!foundAndUpdated) {
+                      workoutLog['id'] = widget.runId;
+                      workoutCards.insert(0, jsonEncode(workoutLog));
+                      print('Created new run with provided ID: ${widget.runId}');
+                    }
+                  } else {
+                    // Create new run - generate a unique ID using timestamp
+                    String newId = 'workout_${now.millisecondsSinceEpoch}';
+                    workoutLog['id'] = newId;
+                    workoutCards.insert(0, jsonEncode(workoutLog));
+                    print('Created new run with generated ID: $newId');
+                  }
+                  
+
+                  
+                  await prefs.setStringList('workout_cards', workoutCards);
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (context) => CodiaPage()),
                     (route) => false,

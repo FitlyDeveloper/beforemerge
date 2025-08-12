@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../WorkoutSession/WorkoutSessionProvider.dart';
 import '../Screens/WeightLifting.dart';
 import '../NewScreens/GoodJob.dart';
+import '../models/intensity_level.dart';
 
 class SaveWorkout extends StatefulWidget {
   final int duration;
@@ -13,7 +14,7 @@ class SaveWorkout extends StatefulWidget {
   final String? workoutType; // 'weightlifting', 'running', 'custom', or custom name
   final double? distance; // Distance for running/custom workouts
   final String? exerciseName; // Exercise name for custom workouts
-  final double? intensityLevel; // Intensity level (1-6) for custom workouts
+  final IntensityLevel? intensityLevel; // Intensity level for custom workouts
   final String? initialTitle; // Initial title for editing existing workouts
   final String? runId; // ID of the run being edited (null for new runs)
   const SaveWorkout({
@@ -832,11 +833,11 @@ class _SaveWorkoutState extends State<SaveWorkout> {
                                                     Navigator.of(context).push(
                                                       PageRouteBuilder(
                                                         pageBuilder: (context, animation, secondaryAnimation) => GoodJob(
-                                                          totalKg: widget.volume,
-                                                          username: 'Username', // Replace with actual username if available
                                                           workoutTitle: _titleController.text.isNotEmpty ? _titleController.text : null,
                                                           workoutType: widget.workoutType,
                                                           duration: widget.duration,
+                                                          volume: widget.volume,
+                                                          prs: widget.prs,
                                                           distance: widget.distance,
                                                           exerciseName: widget.exerciseName,
                                                           intensityLevel: widget.intensityLevel,

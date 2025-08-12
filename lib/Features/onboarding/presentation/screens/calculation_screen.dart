@@ -431,6 +431,9 @@ class _CalculationScreenState extends State<CalculationScreen> {
         userAge--;
       }
 
+      // Save age for RunCardOpen to access
+      await prefs.setInt('age', userAge);
+
       // Calculate activity level - default to moderate activity (1.55)
       // In a real app, you would have the user select their activity level
       double activityLevel = 1.55;

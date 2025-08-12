@@ -7,6 +7,7 @@ import '../../NewScreens/Coach.dart';
 import '../../NewScreens/SnapFood.dart';
 import '../../NewScreens/GymCardOpen.dart';
 import '../../NewScreens/RunCardOpen.dart';
+import '../custom/CustomExerciseCardOpen.dart';
 import 'flip_card.dart';
 import 'home_card2.dart';
 import '../../NewScreens/FoodCardOpen.dart';
@@ -19,6 +20,8 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../Widgets/WorkoutSessionBanner.dart';
 import '../../WorkoutSession/WorkoutSessionProvider.dart';
 import 'package:provider/provider.dart';
+import 'package:fitness_app/core/run_calories.dart';
+import '../../models/intensity_level.dart';
 
 // Custom painter for drawing the calorie gauge
 class CalorieGaugePainter extends CustomPainter {
@@ -114,6 +117,15 @@ class CalorieGaugePainter extends CustomPainter {
   }
 }
 
+// User metrics data class for calorie computation
+class _UserMetrics {
+  final double? weightKg;
+  final double? heightCm;
+  final int? ageYears;
+  final String? gender;
+  _UserMetrics({this.weightKg, this.heightCm, this.ageYears, this.gender});
+}
+
 // Observer class for app lifecycle events
 class _AppLifecycleObserver extends WidgetsBindingObserver {
   final VoidCallback onResume;
@@ -149,12 +161,14 @@ class NutritionTracker {
   int _currentFat = 0;
   int _currentCarb = 0;
   int _consumedCalories = 0;
+  int _burnedCalories = 0;
 
   // Getters for nutrition values
   int get currentProtein => _currentProtein;
   int get currentFat => _currentFat;
   int get currentCarb => _currentCarb;
   int get consumedCalories => _consumedCalories;
+  int get burnedCalories => _burnedCalories;
 
   // Add a new food log entry
   Future<bool> logFood({
@@ -302,9 +316,9 @@ class NutritionTracker {
     return false;
   }
 
-  // Try to load from food_cards format (used by SnapFood)
+  // Try to load from food_cards format (used by SnapFood) - FOOD ONLY, no workouts
   Future<bool> _tryLoadFromFoodCards(SharedPreferences prefs) async {
-    print('Trying to load from food_cards');
+    print('Trying to load from food_cards (food only)');
 
     if (prefs.containsKey('food_cards')) {
       List<String>? cardStrings = prefs.getStringList('food_cards');
@@ -318,6 +332,12 @@ class NutritionTracker {
         for (String cardJson in cardStrings) {
           try {
             Map<String, dynamic> card = jsonDecode(cardJson);
+
+            // IMPORTANT: Skip workout items - only process food items
+            if (card['type'] == 'workout') {
+              print('Skipping workout item in food_cards: ${card['name'] ?? 'Unknown'}');
+              continue;
+            }
 
             // Check if this card is from today
             int timestamp = card['timestamp'] ?? 0;
@@ -360,6 +380,54 @@ class NutritionTracker {
       }
     }
     return false;
+  }
+
+  // Load burned calories from workout_cards
+  Future<void> _loadBurnedCaloriesFromWorkouts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      if (prefs.containsKey('workout_cards')) {
+        List<String>? workoutStrings = prefs.getStringList('workout_cards');
+        
+        if (workoutStrings != null && workoutStrings.isNotEmpty) {
+          print('Found ${workoutStrings.length} workout cards for burned calories');
+          
+          // Get today's date for filtering
+          String today = DateTime.now().toString().split(' ')[0]; // YYYY-MM-DD
+          int totalBurned = 0;
+          
+          for (String workoutJson in workoutStrings) {
+            try {
+              Map<String, dynamic> workout = jsonDecode(workoutJson);
+              
+              // Check if this workout is from today
+              int timestamp = workout['timestamp'] ?? 0;
+              DateTime workoutDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
+              String workoutDateStr = workoutDate.toString().split(' ')[0];
+              
+              if (workoutDateStr == today) {
+                // Get calories burned from workout
+                int workoutCalories = _parseNutritionValue(workout['calories'] ?? 0);
+                totalBurned += workoutCalories;
+                
+                print('Added workout burned calories from today: ${workout['name']}, '
+                    'calories: $workoutCalories');
+              }
+            } catch (e) {
+              print('Error processing workout for burned calories: $e');
+            }
+          }
+          
+          // Update burned calories (this will be used for TDEE calculations)
+          _burnedCalories = totalBurned;
+          
+          print('Total burned calories from workouts today: $_burnedCalories');
+        }
+      }
+    } catch (e) {
+      print('Error loading burned calories from workouts: $e');
+    }
   }
 
   // Try to load from daily nutrition format
@@ -468,6 +536,22 @@ class _CodiaPageState extends State<CodiaPage> {
   // List to store food cards loaded from SharedPreferences
   List<Map<String, dynamic>> _foodCards = [];
   bool _isLoadingFoodCards = true;
+  
+  // List to store workout cards loaded from SharedPreferences
+  List<Map<String, dynamic>> _workoutCards = [];
+  
+  // Track burned calories from workouts
+  int _burnedCalories = 0;
+  
+  // Getter for burned calories
+  int get burnedCalories => _burnedCalories;
+  
+  // Track burned calories today (using computed values from workouts)
+  int _burnedCaloriesToday = 0;
+
+  // Recent Activity loading state and data
+  bool _isLoadingActivities = true;
+  List<Map<String, dynamic>> _recentActivity = [];
 
   // Load nutrition data from food logs
   Future<void> _loadNutritionData() async {
@@ -541,15 +625,23 @@ class _CodiaPageState extends State<CodiaPage> {
     // DEBUGGING HELPER - Uncomment to clear all preferences for testing
     // resetOnboardingData();  // COMMENTING THIS OUT - IT WAS ERASING ALL REAL DATA!
 
-    _loadUserData(); // Load the user's actual data from storage
-    _loadFoodCards(); // Load food cards from SharedPreferences
-    _loadNutritionData(); // Load nutrition data from food logs
+    // Migrate workouts from food_cards to workout_cards first
+    _migrateWorkoutsFromFoodCards().then((_) {
+      _loadUserData(); // Load the user's actual data from storage
+      _loadFoodCards(); // Load food cards from SharedPreferences
+      _loadWorkoutCards(); // Load workout cards from SharedPreferences
+      _loadBurnedCaloriesFromWorkouts(); // Load burned calories from workouts
+      _loadNutritionData(); // Load nutrition data from food logs
+      _loadRecentActivity(); // Load and merge Recent Activity
+    });
 
     // Add listener to refresh data when app resumes
     WidgetsBinding.instance.addObserver(_AppLifecycleObserver(
       onResume: () {
         print('App resumed - refreshing nutrition data');
         _loadNutritionData();
+        _loadRecentActivity(); // Refresh Recent Activity when app resumes
+        _loadBurnedCaloriesFromWorkouts(); // refresh burned on resume
       },
     ));
   }
@@ -1040,8 +1132,41 @@ class _CodiaPageState extends State<CodiaPage> {
         print('- Goal Speed: ${goalSpeedKgPerWeek.toStringAsFixed(1)} kg/week');
       }
       print('- Target Calories: $targetCalories');
+      
+      // Persist user metrics for RunCardOpen to access
+      await _persistUserMetricsForRuns(
+        weightKg: userWeightKg,
+        heightCm: userHeightCm,
+        ageYears: userAge,
+        gender: userGender,
+        birthDateIso: birthDateStr,
+      );
     } catch (e) {
       print('Error loading user data: $e');
+    }
+  }
+
+  // Persist user metrics to SharedPreferences for RunCardOpen to access
+  Future<void> _persistUserMetricsForRuns({
+    required double weightKg,
+    required double heightCm,
+    required int ageYears,
+    required String gender,
+    String? birthDateIso,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('user_weight_kg', weightKg);
+      await prefs.setDouble('user_height_cm', heightCm);
+      await prefs.setInt('age', ageYears);
+      await prefs.setString('gender', gender);
+      if (birthDateIso != null && birthDateIso.isNotEmpty) {
+        await prefs.setString('birth_date', birthDateIso);
+      }
+      // Debug
+      print('[Metrics->Prefs] weight=$weightKg, height=$heightCm, age=$ageYears, gender=$gender, birth=$birthDateIso');
+    } catch (e) {
+      print('Error persisting user metrics: $e');
     }
   }
 
@@ -1231,7 +1356,7 @@ class _CodiaPageState extends State<CodiaPage> {
     return base64Data;
   }
 
-  // Load food cards from SharedPreferences
+  // Load food cards from SharedPreferences (food only, no workouts)
   Future<void> _loadFoodCards() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -1247,6 +1372,12 @@ class _CodiaPageState extends State<CodiaPage> {
         for (String cardJson in storedCards) {
           try {
             Map<String, dynamic> cardData = jsonDecode(cardJson);
+
+            // IMPORTANT: Skip workout items - only process food items
+            if (cardData['type'] == 'workout') {
+              print('Skipping workout item in food_cards: ${cardData['name'] ?? 'Unknown'}');
+              continue;
+            }
 
             // Check if the card is less than 12 hours old
             int timestamp = cardData['timestamp'] ?? 0;
@@ -1335,6 +1466,271 @@ class _CodiaPageState extends State<CodiaPage> {
       });
     }
   }
+
+  // Load workout cards from SharedPreferences
+  Future<void> _loadWorkoutCards() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String>? storedWorkouts = prefs.getStringList('workout_cards');
+
+      List<Map<String, dynamic>> workoutCards = [];
+
+      if (storedWorkouts != null && storedWorkouts.isNotEmpty) {
+        final currentTime = DateTime.now().millisecondsSinceEpoch;
+        final twelveHoursInMillis =
+            12 * 60 * 60 * 1000; // 12 hours in milliseconds
+
+        for (String workoutJson in storedWorkouts) {
+          try {
+            Map<String, dynamic> workoutData = jsonDecode(workoutJson);
+
+            // Ensure this is a workout item
+            if (workoutData['type'] != 'workout') {
+              print('Skipping non-workout item in workout_cards: ${workoutData['name'] ?? 'Unknown'}');
+              continue;
+            }
+
+            // Check if the workout is less than 12 hours old
+            int timestamp = workoutData['timestamp'] ?? 0;
+            if (currentTime - timestamp < twelveHoursInMillis) {
+              workoutCards.add(workoutData);
+            }
+          } catch (e) {
+            print("Error parsing workout JSON: $e");
+          }
+        }
+
+        // Save filtered workouts back if any were removed due to expiration
+        if (workoutCards.length < storedWorkouts.length) {
+          final List<String> updatedWorkouts =
+              workoutCards.map((workout) => jsonEncode(workout)).toList();
+          await prefs.setStringList('workout_cards', updatedWorkouts);
+        }
+
+        // Sort by timestamp (most recent first)
+        workoutCards.sort(
+            (a, b) => (b['timestamp'] as int).compareTo(a['timestamp'] as int));
+
+        setState(() {
+          _workoutCards = workoutCards;
+        });
+
+        print("Loaded ${workoutCards.length} workout cards");
+      }
+    } catch (e) {
+      print("Error loading workout cards: $e");
+    }
+  }
+
+  // Defensive parsing helpers for workout metrics
+  double _safeKm(Map m) {
+    final raw = m['distance'];
+    final meters = raw is num ? raw.toDouble()
+                : double.tryParse(raw?.toString() ?? '') ?? 0.0;
+    return meters / 1000.0;
+  }
+
+  Duration _safeDur(Map m) {
+    final raw = m['duration'];
+    final secs = raw is num ? raw.toInt()
+                : int.tryParse(raw?.toString() ?? '') ?? 0;
+    return Duration(seconds: secs);
+  }
+
+  // Shared compute helper for running calories (same as RunCardOpen)
+  // Now using the shared RunCalories.compute() helper for consistency
+  // Old functions removed to ensure single source of truth
+
+  // Read user metrics for calorie computation
+  Future<_UserMetrics> _readUserMetrics() async {
+    final prefs = await SharedPreferences.getInstance();
+    final weight = prefs.get('user_weight_kg');
+    final height = prefs.get('user_height_cm');
+    final gender = prefs.getString('gender') ?? prefs.getString('user_gender');
+    final agePref = prefs.getInt('age');
+    final birthIso = prefs.getString('birth_date');
+
+    double? weightKg = weight is num ? weight.toDouble() : double.tryParse('$weight');
+    double? heightCm = height is num ? height.toDouble() : double.tryParse('$height');
+
+    int? ageYears = agePref;
+    if (ageYears == null && birthIso != null && birthIso.isNotEmpty) {
+      try {
+        final dob = DateTime.parse(birthIso);
+        final now = DateTime.now();
+        var a = now.year - dob.year;
+        if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) a--;
+        ageYears = a;
+      } catch (_) {}
+    }
+
+    return _UserMetrics(weightKg: weightKg, heightCm: heightCm, ageYears: ageYears, gender: gender);
+  }
+
+
+
+  // Load and merge Recent Activity from both food_cards and workout_cards
+  Future<void> _loadRecentActivity() async {
+    if (!mounted) return;
+    setState(() => _isLoadingActivities = true);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final foodsRaw = prefs.getStringList('food_cards') ?? const <String>[];
+      final worksRaw = prefs.getStringList('workout_cards') ?? const <String>[];
+
+      final items = <Map<String, dynamic>>[];
+
+      // Parse foods
+      for (final s in foodsRaw) {
+        try {
+          final m = jsonDecode(s) as Map<String, dynamic>;
+          if ((m['type'] ?? '') != 'workout') {
+            items.add(m);
+          }
+        } catch (_) {}
+      }
+
+      // Read metrics once for calorie computation
+      final metrics = await _readUserMetrics();
+
+      // Parse workouts
+      for (final s in worksRaw) {
+        try {
+          final m = jsonDecode(s) as Map<String, dynamic>;
+          if ((m['type'] ?? '') == 'workout') {
+            // Compute calories for running workouts if possible
+            if ((m['workoutType'] ?? '') == 'running') {
+              // Extract distance and duration
+              final distM = (m['distance'] is num)
+                  ? (m['distance'] as num).toDouble()
+                  : double.tryParse('${m['distance']}') ?? 0.0;
+              final durS = (m['duration'] is num)
+                  ? (m['duration'] as num).toDouble()
+                  : double.tryParse('${m['duration']}') ?? 0.0;
+
+              int? computed;
+              final w = metrics.weightKg;
+              if (w != null && distM > 0 && durS > 0) {
+                computed = RunCalories.compute(
+                  weightKg: w,
+                  distanceMeters: distM,
+                  durationSeconds: durS,
+                  gender: metrics.gender,
+                );
+                
+                // Debug logging for consistency check
+                print('[RunCal][DEBUG] weight=${w}, dist=${distM.round()}m, dur=${durS.round()}s -> kcal=${computed}');
+              }
+
+              // Choose display calories: prefer computed, else stored
+              final storedRaw = m['calories'];
+              final stored = storedRaw is num
+                  ? (storedRaw as num).toInt()
+                  : int.tryParse('$storedRaw');
+
+              m['displayCalories'] = computed ?? stored ?? 0;
+            }
+            items.add(m);
+          }
+        } catch (_) {}
+      }
+
+      // Defensive timestamp -> int
+      items.removeWhere((m) => m['timestamp'] == null);
+      for (final m in items) {
+        final t = m['timestamp'];
+        if (t is String) {
+          m['timestamp'] = int.tryParse(t) ?? 0;
+        } else if (t is num) {
+          m['timestamp'] = t.toInt();
+        } else {
+          m['timestamp'] = 0;
+        }
+      }
+
+      // Sort newest first; avoid comparator crashes
+      items.sort((a, b) {
+        final ta = (a['timestamp'] as int?) ?? 0;
+        final tb = (b['timestamp'] as int?) ?? 0;
+        return tb.compareTo(ta);
+      });
+
+      if (!mounted) return;
+      setState(() {
+        _recentActivity = items;
+      });
+    } catch (e) {
+      print('[RecentActivity] load failed: $e');
+    } finally {
+      if (!mounted) return;
+      setState(() => _isLoadingActivities = false);
+    }
+  }
+
+  // Load burned calories from workout_cards using shared helper
+  Future<void> _loadBurnedCaloriesFromWorkouts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final workoutsRaw = prefs.getStringList('workout_cards') ?? const <String>[];
+      final metrics = await _readUserMetrics();
+
+      final now = DateTime.now();
+      int total = 0;
+
+      for (final s in workoutsRaw) {
+        Map<String, dynamic> m;
+        try {
+          m = jsonDecode(s) as Map<String, dynamic>;
+        } catch (_) {
+          continue;
+        }
+
+        if ((m['type'] ?? '') != 'workout') continue;
+
+        // Keep this generic; we can compute for running and later others.
+        final ts = m['timestamp'];
+        final tsMs = ts is num ? ts.toInt() : int.tryParse('$ts') ?? 0;
+        if (tsMs == 0) continue;
+
+        final dt = DateTime.fromMillisecondsSinceEpoch(tsMs);
+        final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+        if (!isToday) continue;
+
+        // Pull distance/duration for compute
+        final distM = (m['distance'] is num) ? (m['distance'] as num).toDouble()
+                                             : double.tryParse('${m['distance']}') ?? 0.0;
+        final durS  = (m['duration'] is num) ? (m['duration'] as num).toDouble()
+                                             : double.tryParse('${m['duration']}') ?? 0.0;
+
+        int? computed;
+        if (metrics.weightKg != null && distM > 0 && durS > 0) {
+          computed = RunCalories.compute(
+            weightKg: metrics.weightKg!,
+            distanceMeters: distM,
+            durationSeconds: durS,
+            gender: metrics.gender,
+          );
+        }
+
+        final stored = (m['calories'] is num) ? (m['calories'] as num).toInt()
+                                             : int.tryParse('${m['calories']}');
+
+        final add = computed ?? stored ?? 0;
+        total += add;
+      }
+
+      if (!mounted) return;
+      setState(() => _burnedCaloriesToday = total);
+      print('Total burned calories from workouts today: $_burnedCaloriesToday');
+    } catch (e) {
+      print('[BurnedLoader] failed: $e');
+      if (!mounted) return;
+      setState(() => _burnedCaloriesToday = 0);
+    }
+  }
+
+
 
   // Helper method to extract numeric value from a string and convert to int
   int _extractNumericValueAsInt(dynamic input, {int multiplier = 1}) {
@@ -1580,6 +1976,7 @@ class _CodiaPageState extends State<CodiaPage> {
             // Refresh data when returning from FoodCardOpen
             _loadFoodCards();
             _loadNutritionData();
+            _loadRecentActivity(); // Refresh Recent Activity
           });
         },
         child: Container(
@@ -1759,6 +2156,10 @@ class _CodiaPageState extends State<CodiaPage> {
     }
   }
 
+  // Format intensity for display using 1-based rank
+  String _intensityTextFromIndex(int? idx) =>
+      idx == null ? '—/6' : '${idx + 1}/6';
+
   // Build a workout card widget from workout data
   Widget _buildWorkoutCard(Map<String, dynamic> workoutCard) {
     // Convert timestamp to time string (e.g., "12:07")
@@ -1779,30 +2180,26 @@ class _CodiaPageState extends State<CodiaPage> {
     String workoutType = workoutCard['workoutType'] ?? 'weightlifting';
     int calories = _extractNumericValueAsInt(workoutCard['calories']);
     
-    // Calculate duration properly - duration is stored in seconds, convert to minutes
-    int durationInMinutes;
-    if (workoutCard['duration'] is int) {
-      // Duration is stored in seconds, convert to minutes
-      durationInMinutes = (workoutCard['duration'] / 60).floor();
-    } else if (workoutCard['duration'] is double) {
-      // Duration is stored in seconds, convert to minutes
-      durationInMinutes = (workoutCard['duration'] / 60).floor();
-    } else if (workoutCard['duration'] is String) {
-      // Try to parse as double first, then convert seconds to minutes
-      double? parsedDuration = double.tryParse(workoutCard['duration']);
-      durationInMinutes = parsedDuration != null ? (parsedDuration / 60).floor() : 0;
-    } else {
-      durationInMinutes = 0;
-    }
+    // Calculate duration properly using safe parsing
+    int durationInMinutes = (_safeDur(workoutCard).inSeconds / 60).floor();
     
     int volume = _extractNumericValueAsInt(workoutCard['volume']);
     int prs = _extractNumericValueAsInt(workoutCard['prs']);
 
     // Apply special layout for running workouts
     if (workoutType == 'running') {
-      // Extract running-specific data with fallbacks
-      double distance = _extractNumericValueAsDouble(workoutCard['distance']) ?? 0.0;
-      double pace = _extractNumericValueAsDouble(workoutCard['pace']) ?? 0.0;
+      // Extract running-specific data with safe parsing
+      double distance = _safeKm(workoutCard);
+      
+      // Calculate pace: total time in minutes ÷ distance in kilometers
+      double paceInMinutes = 0.0;
+      if (distance > 0 && durationInMinutes > 0) {
+        paceInMinutes = durationInMinutes / distance;
+      }
+
+      // Use computed calories if available, otherwise fallback to stored
+      final displayCalories = workoutCard['displayCalories'] ?? calories;
+      final caloriesText = '${displayCalories.round()} calories';
       
       return GestureDetector(
         onTap: () {
@@ -1901,7 +2298,7 @@ class _CodiaPageState extends State<CodiaPage> {
                           ),
                           SizedBox(width: 7.7),
                           Text(
-                            '$calories calories',
+                            caloriesText,
                             style: TextStyle(
                               fontSize: 15.4,
                               fontWeight: FontWeight.bold,
@@ -1923,16 +2320,13 @@ class _CodiaPageState extends State<CodiaPage> {
                             height: 14,
                           ),
                           SizedBox(width: 7.7),
-                          Flexible(
-                            child: Text(
-                              _formatDuration(durationInMinutes),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.normal,
-                                color: Colors.black,
-                                decoration: TextDecoration.none,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            _formatDuration(durationInMinutes),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.normal,
+                              color: Colors.black,
+                              decoration: TextDecoration.none,
                             ),
                           ),
                           SizedBox(width: 24.2),
@@ -1945,7 +2339,7 @@ class _CodiaPageState extends State<CodiaPage> {
                           ),
                           SizedBox(width: 7.7),
                           Text(
-                            '${_formatDistance(distance / 1000)}km',
+                            distance > 0 ? '${_formatDistance(distance)}km' : '0km',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.normal,
@@ -1964,7 +2358,7 @@ class _CodiaPageState extends State<CodiaPage> {
                           SizedBox(width: 7.7),
                           Flexible(
                             child: Text(
-                              '${pace.toStringAsFixed(1)}',
+                              paceInMinutes > 0 ? '${paceInMinutes.toStringAsFixed(1)}' : '0.0',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.normal,
@@ -1988,8 +2382,8 @@ class _CodiaPageState extends State<CodiaPage> {
     }
     // Apply special layout for custom exercise workouts
     else if (workoutType == 'custom') {
-      // Extract custom exercise data with fallbacks
-      double distance = _extractNumericValueAsDouble(workoutCard['distance']) ?? 0.0;
+      // Extract custom exercise data with safe parsing
+      double distance = _safeKm(workoutCard);
       double pace = _extractNumericValueAsDouble(workoutCard['pace']) ?? 0.0;
       double intensityLevel = _extractNumericValueAsDouble(workoutCard['intensityLevel']) ?? 0.0;
       
@@ -2001,7 +2395,7 @@ class _CodiaPageState extends State<CodiaPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => GymCardOpen(workoutData: workoutCard),
+              builder: (context) => CustomExerciseCardOpen(workoutData: workoutCard),
             ),
           );
         },
@@ -2133,17 +2527,17 @@ class _CodiaPageState extends State<CodiaPage> {
                             height: 14,
                           ),
                           SizedBox(width: 7.7),
-                          Text(
-                            hasDistance 
-                              ? '${_formatDistance(distance / 1000)}km'
-                              : '${intensityLevel.toInt()}/6',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.normal,
-                              color: Colors.black,
-                              decoration: TextDecoration.none,
+                                                      Text(
+                              hasDistance 
+                                ? (distance > 0 ? '${_formatDistance(distance / 1000)}km' : '0km')
+                                : _intensityTextFromIndex(intensityLevel.toInt()),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.normal,
+                                color: Colors.black,
+                                decoration: TextDecoration.none,
+                              ),
                             ),
-                          ),
                           
                           // Pace with speed icon (only show if distance is available)
                           if (hasDistance) ...[
@@ -2373,8 +2767,7 @@ class _CodiaPageState extends State<CodiaPage> {
   List<Widget> _buildDynamicFoodCards() {
     final List<Widget> widgets = [];
 
-    // Only show loading indicator if we're still loading AND there are food cards to show
-    if (_isLoadingFoodCards && _foodCards.isNotEmpty) {
+    if (_isLoadingActivities) {
       widgets.add(
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 20),
@@ -2383,20 +2776,33 @@ class _CodiaPageState extends State<CodiaPage> {
           ),
         ),
       );
-    }
-    // Display food cards loaded from SharedPreferences
-    else if (_foodCards.isNotEmpty) {
-      for (var foodCard in _foodCards) {
+    } else if (_recentActivity.isEmpty) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Center(
+            child: Text(
+              'No activity yet',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontFamily: 'SF Pro Display',
+              ),
+            ),
+          ),
+        ),
+      );
+    } else {
+      // Display merged activity cards from _recentActivity
+      for (var card in _recentActivity) {
         // Check if this is a workout card
-        if (foodCard['type'] == 'workout') {
-          widgets.add(_buildWorkoutCard(foodCard));
+        if (card['type'] == 'workout') {
+          widgets.add(_buildWorkoutCard(card));
         } else {
-          widgets.add(_buildFoodCard(foodCard));
+          widgets.add(_buildFoodCard(card));
         }
       }
     }
-    // No loading animation when there are no food cards to show
-    // Just return an empty list of widgets
 
     return widgets;
   }
@@ -3024,7 +3430,7 @@ class _CodiaPageState extends State<CodiaPage> {
               Column(
                 children: [
                   Text(
-                    '0', // NOTE: Burned calculation is separate
+                    _burnedCaloriesToday.toString(),
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -3378,6 +3784,7 @@ class _CodiaPageState extends State<CodiaPage> {
       print('Returned from SnapFood - refreshing data');
       _loadFoodCards();
       _loadNutritionData();
+      _loadRecentActivity(); // Refresh Recent Activity
     });
   }
 
@@ -3400,6 +3807,12 @@ class _CodiaPageState extends State<CodiaPage> {
           // Check only the 5 most recent cards
           try {
             Map<String, dynamic> foodCard = jsonDecode(cardJson);
+
+            // IMPORTANT: Skip workout items - only process food items
+            if (foodCard['type'] == 'workout') {
+              print('Skipping workout item when looking for nutrition data: ${foodCard['name'] ?? 'Unknown'}');
+              continue;
+            }
 
             // Generate the proper scan ID using the same format as FoodCardOpen.dart
             if (foodCard.containsKey('name') &&
@@ -3502,6 +3915,50 @@ class _CodiaPageState extends State<CodiaPage> {
       print('Returned from FoodCardOpen - refreshing data');
       _loadFoodCards();
       _loadNutritionData();
+      _loadRecentActivity(); // Refresh Recent Activity
     });
+  }
+
+  // Migration: Move workout items from food_cards to workout_cards
+  Future<void> _migrateWorkoutsFromFoodCards() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Check if migration is needed
+      if (!prefs.containsKey('workout_cards')) {
+        final List<String>? foodCards = prefs.getStringList('food_cards');
+        if (foodCards != null && foodCards.isNotEmpty) {
+          List<String> workoutItems = [];
+          List<String> foodOnlyItems = [];
+          
+          for (String cardJson in foodCards) {
+            try {
+              Map<String, dynamic> card = jsonDecode(cardJson);
+              if (card['type'] == 'workout') {
+                workoutItems.add(cardJson);
+              } else {
+                foodOnlyItems.add(cardJson);
+              }
+            } catch (e) {
+              // Keep malformed cards in food_cards to avoid data loss
+              foodOnlyItems.add(cardJson);
+            }
+          }
+          
+          if (workoutItems.isNotEmpty) {
+            // Save workout items to new key
+            await prefs.setStringList('workout_cards', workoutItems);
+            
+            // Update food_cards to remove workout items
+            await prefs.setStringList('food_cards', foodOnlyItems);
+            
+            print('[MIGRATE] moved ${workoutItems.length} workout items from food_cards -> workout_cards');
+          }
+        }
+      }
+    } catch (e) {
+      print('[MIGRATE] error during migration: $e');
+      // Don't crash if migration fails
+    }
   }
 }

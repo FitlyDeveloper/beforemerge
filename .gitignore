@@ -1,31 +1,4 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# Flutter/Dart specific
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -34,20 +7,18 @@ migrate_working_dir/
 .pub/
 /build/
 
-# Web related
+# Android
+**/android/**/gradle-wrapper.jar
+**/android/.gradle
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/key.properties
+*.jks
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# iOS/XCode related
+# iOS
 **/ios/**/*.mode1v3
 **/ios/**/*.mode2v3
 **/ios/**/*.moved-aside
@@ -73,38 +44,32 @@ app.*.map.json
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
 
-# Environment and API keys
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment variables
 .env
 .env.local
-.env.backup
-.env.*
-*.env
-!.env.example
+.env.development
+.env.test
+.env.production
 .runtimeconfig.json
 
-# Firebase related
+# Firebase
 firebase-debug.log
 functions/node_modules/
 functions/.runtimeconfig.json
 
-# Test files
-test-*.js
+# Build outputs
+dist/
+build/
+out/
 
-# Node.js
-node_modules/
-npm-debug.log
-yarn-error.log
-.pnpm-debug.log
-
-# Logs
-logs
-*.log
-
-# OS specific
-.DS_Store
-Thumbs.db
-
-# Editor directories and files
+# IDE
 .idea/
 .vscode/
 *.suo
@@ -113,35 +78,7 @@ Thumbs.db
 *.sln
 *.sw?
 
-# Build directories
-dist/
-build/
-out/
-
-# Dependency directories
-**/node_modules/
-
-# Testing
-coverage/
-
-# Misc
-.temp
-.cache
-
-# Dependencies
-node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-
-# Environment variables
-.env
-.env.local
-.env.development
-.env.test
-.env.production
-
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
@@ -149,12 +86,8 @@ Thumbs.db
 logs
 *.log
 
-# Build files
-dist/
-build/
-
-# IDE files
-.idea/
-.vscode/
-*.sublime-project
-*.sublime-workspace
+# Temporary files
+.temp
+.cache
+*.tmp
+*.temp

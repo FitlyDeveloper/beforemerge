@@ -33,6 +33,20 @@ class _LogRunningState extends State<LogRunning> {
   void initState() {
     super.initState();
     
+    // Debug logging for initState
+    print('=== LogRunning InitState Debug ===');
+    print('Initial distance: ${widget.initialDistance}');
+    print('Initial time: ${widget.initialTime}');
+    print('Initial title: ${widget.initialTitle}');
+    print('Run ID: ${widget.runId}');
+    
+    // Add listener to distance controller to track changes
+    _distanceController.addListener(() {
+      print('=== Distance Controller Listener ===');
+      print('Controller text changed to: "${_distanceController.text}"');
+      print('====================================');
+    });
+    
     // Pre-fill controllers with initial values if provided
     if (widget.initialDistance != null) {
       _distanceController.text = widget.initialDistance!.toString();
@@ -42,6 +56,9 @@ class _LogRunningState extends State<LogRunning> {
       if (distances.contains(distanceWithUnit)) {
         selectedDistance = distanceWithUnit;
       }
+      
+      print('Distance controller set to: ${_distanceController.text}');
+      print('Selected distance preset: $selectedDistance');
     }
     if (widget.initialTime != null) {
       _timeController.text = widget.initialTime!.toString();
@@ -51,7 +68,11 @@ class _LogRunningState extends State<LogRunning> {
       if (times.contains(timeWithUnit)) {
         selectedTime = timeWithUnit;
       }
+      
+      print('Time controller set to: ${_timeController.text}');
+      print('Selected time preset: $selectedTime');
     }
+    print('==================================');
   }
 
   @override
@@ -176,7 +197,22 @@ class _LogRunningState extends State<LogRunning> {
                                       if (selected) {
                                         // Extract just the numeric value from the preset (e.g., "10 km" -> "10")
                                         String numericValue = distance.replaceAll(' km', '');
+                                        
+                                        // Update the controller text
                                         _distanceController.text = numericValue;
+                                        
+                                        // Debug logging for preset selection
+                                        print('=== Preset Distance Debug ===');
+                                        print('Preset selected: $distance');
+                                        print('Numeric value extracted: $numericValue');
+                                        print('Text controller updated to: ${_distanceController.text}');
+                                        print('=============================');
+                                      } else {
+                                        // Clear the text field when preset is deselected
+                                        _distanceController.clear();
+                                        print('=== Preset Distance Debug ===');
+                                        print('Preset deselected, text field cleared');
+                                        print('=============================');
                                       }
                                     });
                                   },
@@ -227,6 +263,13 @@ class _LogRunningState extends State<LogRunning> {
                                       selectedDistance = null;
                                     });
                                   }
+                                  
+                                  // Debug logging for manual input
+                                  print('=== Manual Distance Input Debug ===');
+                                  print('Manual input value: "$value"');
+                                  print('Text controller text: "${_distanceController.text}"');
+                                  print('Selected distance preset: $selectedDistance');
+                                  print('=====================================');
                                 },
                                 style: TextStyle(
                                   fontSize: 13.6,
@@ -423,11 +466,17 @@ class _LogRunningState extends State<LogRunning> {
                       // Convert distance from kilometers to meters for storage
                       double distanceInMeters = distanceInKm * 1000;
                       
-                      // Debug logging to verify the values
-                      print('LogRunning - Distance input: "${_distanceController.text}"');
-                      print('LogRunning - Cleaned distance: "$cleanDistanceText"');
-                      print('LogRunning - Distance in km: $distanceInKm');
-                      print('LogRunning - Distance in meters: $distanceInMeters');
+                      // Enhanced debug logging to verify the values
+                      print('=== LogRunning Debug ===');
+                      print('LogRunning - Raw distance controller text: "${_distanceController.text}"');
+                      print('LogRunning - Cleaned distance text: "$cleanDistanceText"');
+                      print('LogRunning - Parsed distance in km: $distanceInKm');
+                      print('LogRunning - Converted distance in meters: $distanceInMeters');
+                      print('LogRunning - Selected distance preset: $selectedDistance');
+                      print('LogRunning - Time controller text: "${_timeController.text}"');
+                      print('LogRunning - Parsed time in minutes: $timeInMinutes');
+                      print('LogRunning - Time in seconds: ${timeInMinutes * 60}');
+                      print('=======================');
                       
                       Navigator.push(
                         context,

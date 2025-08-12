@@ -912,8 +912,7 @@ class _SaveWeightliftingWorkoutState extends State<SaveWeightliftingWorkout> {
                                                      Navigator.of(context).push(
                                                        PageRouteBuilder(
                                                          pageBuilder: (context, animation, secondaryAnimation) => GoodJob(
-                                                           totalKg: widget.volume,
-                                                           username: 'Username', // Replace with actual username if available
+                                                           totalKg: widget.volume.toDouble(),
                                                            workoutTitle: _titleController.text.isNotEmpty ? _titleController.text : null,
                                                            workoutType: widget.workoutType,
                                                            duration: widget.duration,
