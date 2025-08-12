@@ -5,20 +5,17 @@
 .packages
 .pub-cache/
 .pub/
-/build/
+build/
 
-# Android
-**/android/**/gradle-wrapper.jar
+# Android build artifacts
 **/android/.gradle
 **/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
 **/android/key.properties
 *.jks
 
-# iOS
+# iOS build artifacts
 **/ios/**/*.mode1v3
 **/ios/**/*.mode2v3
 **/ios/**/*.moved-aside
@@ -44,7 +41,7 @@
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
 
-# Node.js
+# Node.js dependencies
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -66,7 +63,6 @@ functions/.runtimeconfig.json
 
 # Build outputs
 dist/
-build/
 out/
 
 # IDE
